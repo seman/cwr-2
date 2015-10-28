@@ -8,7 +8,5 @@ cover:
 	python -m coverage report
 clean:
 	find . -name '*.pyc' -delete
-apt-update:
-	sudo apt-get -qq update
 .PHONY: lint test apt-update
 

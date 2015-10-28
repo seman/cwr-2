@@ -1,7 +1,12 @@
-import os
-
 from argparse import Namespace
+import os
+from StringIO import StringIO
 from unittest import TestCase
+
+from mock import (
+    patch,
+    call,
+)
 
 from cloudweatherreport import cloud_weather_report
 
@@ -34,3 +39,37 @@ class TestRunner(TestCase):
             skip_implicit=True, test_pattern='tp', test_plan='test_plan',
             testdir='/test/dir', tests_yaml='test_yaml_file', verbose=True)
         self.assertEqual(args, expected)
+
+    def test_run_bundle_test(self):
+        args = Namespace()
+        io_output = StringIO()
+        with patch(
+                'cloudweatherreport.cloud_weather_report.StringIO',
+                autospec=True, return_value=io_output) as mock_ntf:
+            with patch('cloudweatherreport.cloud_weather_report.tester.main',
+                       autospec=True, side_effect=self.fake_tester_main
+                       ) as mock_tm:
+                output = cloud_weather_report.run_bundle_test(args, 'foo')
+        self.assertEqual(output, 'test passed')
+        call = Namespace(environment='foo', output=io_output, reporter='json',
+                         tests=None)
+        mock_tm.assert_called_once_with(call)
+        mock_ntf.assert_called_once_with()
+
+    def fake_tester_main(self, args):
+        args.output.write('test passed')
+
+    def test_main(self):
+        args = Namespace(controller=['aws'])
+        with patch('cloudweatherreport.cloud_weather_report.run_bundle_test',
+                   autospec=True) as mock_rbt:
+            cloud_weather_report.main(args)
+        mock_rbt.assert_called_once_with(args, 'aws')
+
+    def test_main_multi_clouds(self):
+        args = Namespace(controller=['aws', 'gce'])
+        with patch('cloudweatherreport.cloud_weather_report.run_bundle_test',
+                   autospec=True) as mock_rbt:
+            cloud_weather_report.main(args)
+        calls = [call(args, 'aws'), call(args, 'gce')]
+        self.assertEqual(mock_rbt.mock_calls, calls)
