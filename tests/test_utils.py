@@ -90,6 +90,8 @@ class TestUtil(TestCase):
     def test_get_provider_name(self):
         name = get_provider_name('ec2')
         self.assertEqual(name, 'AWS')
+        name = get_provider_name('gce')
+        self.assertEqual(name, 'GCE')
         name = get_provider_name('foo')
         self.assertEqual(name, 'foo')
 
